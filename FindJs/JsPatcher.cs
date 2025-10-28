@@ -144,7 +144,31 @@ namespace FindJs
 
             return result;
         }
+        private static int FindBlockEndIndex(string text, int startIndex)
+        {
+            if (startIndex < 0 || startIndex >= text.Length || text[startIndex] != '{')
+                throw new ArgumentException("startIndex должен указывать на символ '{' в строке.");
 
+            int depth = 0;
+            for (int i = startIndex; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (c == '{')
+                {
+                    depth++;
+                }
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        }
 
         private void backupAndSave(string content) 
         { 
