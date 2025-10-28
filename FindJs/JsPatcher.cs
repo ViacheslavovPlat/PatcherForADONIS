@@ -50,15 +50,15 @@ namespace FindJs
 
         public (bool, string) applyPatch()
         {
-            string content;
 
             if (!File.Exists(jsFilePath))
             {
                 opStatus.printOperationStatus(OperationStatusExt.operationStatus.ERROR,
-                     $"File not found: {jsFilePath}");
+                    $"File not found: {jsFilePath}");
                 return (false, "");
             }
 
+            string content;
             try
             {
                 content = File.ReadAllText(jsFilePath, Encoding.UTF8);
@@ -77,37 +77,163 @@ namespace FindJs
                 return (true, "");
             }
 
-            try
+            opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
+                "Applying patch to JS file...");
+
+            opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
+                "Patching getHash function...");
+            bool patchedGetHash = false;
+            int posGet = content.IndexOf("function getHash", StringComparison.Ordinal);
+            if (posGet >= 0)
             {
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
-                    "Applying patch to JS file...");
-
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
-                    "Patching getHash function...");
-                content = filterString(content, getHashPattern, _ => NEW_GETHASH_BODY);
-
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
-                    "Patching token setter...");
-                content = filterString(content, setTokenPatterns, _ => NEW_TOKEN_BODY);
-
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
-                    "Patching extension method...");
-                content = filterString(content, extPatterns, _ => NEW_EXT_BODY);
-
-                backupAndSave(content);
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
-                    "Patching completed successfully.");
-                return (true, content);
+                int openGet = content.IndexOf('{', posGet);
+                int closeGet = FindBlockEndIndex(content, openGet);
+                if (openGet > posGet && closeGet > openGet)
+                {
+                    string header = content.Substring(posGet, openGet - posGet + 1);
+                    string tail = content.Substring(closeGet); 
+                    content = content.Substring(0, posGet) + header + NEW_GETHASH_BODY + tail.Substring(1);
+                    patchedGetHash = true;
+                }
+                else
+                {
+                    opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                        "Could not locate getHash() body boundaries.");
+                }
             }
-            catch (Exception ex)
+            else
             {
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.ERROR,
-                    $"Error during patching: {ex.Message}");
-                return (false, "");
+                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                    "Function getHash() not found.");
             }
+
+            opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
+                "Patching token setter...");
+            bool patchedToken = false;
+            int posCheck = content.IndexOf("function checkIFrame", StringComparison.Ordinal);
+            if (posCheck >= 0)
+            {
+                int openCheck = content.IndexOf('{', posCheck);
+                int closeCheck = FindBlockEndIndex(content, openCheck);
+                if (openCheck > posCheck && closeCheck > openCheck)
+                {
+                    string func = content.Substring(posCheck, closeCheck - posCheck + 1);
+                    int ifPos = func.IndexOf("if (newtoken !== token)", StringComparison.Ordinal);
+                    if (ifPos >= 0)
+                    {
+                        int ifOpen = func.IndexOf('{', ifPos);
+                        int ifClose = FindBlockEndIndex(func, ifOpen);
+                        if (ifOpen > ifPos && ifClose > ifOpen)
+                        {
+                            string before = func.Substring(0, ifOpen + 1);
+                            string after = func.Substring(ifClose);
+                            func = before + NEW_TOKEN_BODY + after;
+                            content = content.Substring(0, posCheck) + func + content.Substring(closeCheck + 1);
+                            patchedToken = true;
+                        }
+                        else
+                        {
+                            opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                                "Could not locate token setter block boundaries.");
+                        }
+                    }
+                    else
+                    {
+                        opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                            "Token setter if-block not found.");
+                    }
+                }
+                else
+                {
+                    opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                        "Could not locate checkIFrame() body boundaries.");
+                }
+            }
+            else
+            {
+                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                    "Function checkIFrame() not found.");
+            }
+
+            opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
+                "Patching extension method...");
+            bool patchedExt = false;
+            int posReturn = content.IndexOf("return", StringComparison.Ordinal);
+            if (posReturn >= 0)
+            {
+                int openReturn = content.IndexOf('{', posReturn);
+                int closeReturn = FindBlockEndIndex(content, openReturn);
+                if (openReturn > posReturn && closeReturn > openReturn)
+                {
+                    string returnBody = content.Substring(openReturn + 1, closeReturn - openReturn - 1);
+                    int addPos = returnBody.IndexOf("add:", StringComparison.Ordinal);
+                    if (addPos >= 0)
+                    {
+                        int funcOpen = returnBody.IndexOf('{', addPos);
+                        int funcClose = FindBlockEndIndex(returnBody, funcOpen);
+                        if (funcOpen > addPos && funcClose > funcOpen)
+                        {
+                            string addFunc = returnBody.Substring(addPos, funcClose - addPos + 1);
+                            int elsePos = addFunc.IndexOf("else", StringComparison.Ordinal);
+                            if (elsePos >= 0)
+                            {
+                                int elseOpen = addFunc.IndexOf('{', elsePos);
+                                int elseClose = FindBlockEndIndex(addFunc, elseOpen);
+                                if (elseOpen > elsePos && elseClose > elseOpen)
+                                {
+                                    string before = addFunc.Substring(0, elseOpen + 1);
+                                    string after = addFunc.Substring(elseClose);
+                                    addFunc = before + NEW_EXT_BODY + after;
+                                    returnBody = returnBody.Substring(0, addPos) + addFunc + returnBody.Substring(funcClose + 1);
+                                    content = content.Substring(0, openReturn + 1) + returnBody + content.Substring(closeReturn);
+                                    patchedExt = true;
+                                }
+                                else
+                                {
+                                    opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                                        "Could not locate else-block boundaries in add().");
+                                }
+                            }
+                            else
+                            {
+                                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                                    "else-block inside add() not found.");
+                            }
+                        }
+                        else
+                        {
+                            opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                                "Could not locate add() body boundaries.");
+                        }
+                    }
+                    else
+                    {
+                        opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                            "Method add() not found inside return block.");
+                    }
+                }
+                else
+                {
+                    opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                        "Could not locate return-block boundaries.");
+                }
+            }
+            else
+            {
+                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                    "return block not found.");
+            }
+
+            backupAndSave(content);
+            opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
+                "Patching completed successfully.");
+
+            return (true, content);
         }
 
-        private string filterString(string input, IEnumerable<string> patterns, Func<string, string> filteredString)
+
+
+        /*private string filterString(string input, IEnumerable<string> patterns, Func<string, string> filteredString)
         {
             opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
                 "Filtering string by nested patterns...");
@@ -143,7 +269,8 @@ namespace FindJs
             string result = input.Replace(lastMatch.Value, newBlock);
 
             return result;
-        }
+        }*/
+
         private static int FindBlockEndIndex(string text, int startIndex)
         {
             if (startIndex < 0 || startIndex >= text.Length || text[startIndex] != '{')
