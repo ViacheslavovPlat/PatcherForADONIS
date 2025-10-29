@@ -14,20 +14,20 @@ namespace PatcherForADONIS
         private readonly OperationStatusExt opStatus;
         private const string PATCH_MARKER = "// Patched for iframe support";
 
-        private const string NEW_GETHASH_BODY = "\tvar loc = window == window.top ? window.top.location : window.location;\n" +
-        "\tvar href = loc.href, i = href.indexOf('#');\n" +
-        "\treturn i >= 0 ? href.substr(i + 1) : null;\n  ";
+        private const string NEW_GETHASH_BODY = "\n\t  var loc = window == window.top ? window.top.location : window.location;\n" +
+        "\t  var href = loc.href, i = href.indexOf('#');\n" +
+        "\t  return i >= 0 ? href.substr(i + 1) : null;\n  ";
 
         private const string NEW_TOKEN_BODY = "\t\t\ttoken = newtoken;\n" +
-            "\t\t\thandleStateChange(token);\n" +
-            "\t\t\tvar loc = window == window.top ? window.top.location : window.location;\n" +
-            "\t\t\tloc.hash = token;\n" +
-            "\t\t\thash = token;\n"+
-            "\t\t\tdoSave();\n\t\t  ";
+            "\t\t\t  handleStateChange(token);\n" +
+            "\t\t\t  var loc = window == window.top ? window.top.location : window.location;\n" +
+            "\t\t\t  loc.hash = token;\n" +
+            "\t\t\t  hash = token;\n"+
+            "\t\t\t  doSave();\n\t\t  ";
 
-        private const string NEW_EXT_BODY = "\t\t\tvar loc = window == window.top ? window.top.location : window.location;\n" +
-            "\t\t\tloc.hash = token;\n" +
-            "\t\t\treturn true;\n\t\t  ";
+        private const string NEW_EXT_BODY = "\n\t\t\t  var loc = window == window.top ? window.top.location : window.location;\n" +
+            "\t\t\t  loc.hash = token;\n" +
+            "\t\t\t  return true;\n\t\t  ";
 
         public JsPatcher(string jsFilePath) 
         {
@@ -58,9 +58,9 @@ namespace PatcherForADONIS
 
             if(Regex.IsMatch(content, @"^\s*//\s*Patched\s+for\s+iframe\s+support", RegexOptions.Multiline))
             {
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                       "File is already patched skipping");
-                return (true, "");
+                //opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                  //     "File is already patched skipping");
+                //return (true, "");
             }
 
             opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
