@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace FindJs
+namespace PatcherForADONIS
 {
     public class JsPatcher
     {
@@ -59,7 +59,7 @@ namespace FindJs
                 return (false, "");
             }
 
-            if (content.Contains(PATCH_MARKER))
+            if(Regex.IsMatch(content, @"^\s*//\s*Patched\s+for\s+iframe\s+support", RegexOptions.Multiline))
             {
                 opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
                         "File is already patched skipping");
@@ -242,10 +242,8 @@ namespace FindJs
 
             if (anyPatched)
             {
+                content = PATCH_MARKER + Environment.NewLine + content;
                 backupAndSave(content);
-
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
-                        "Patching completed successfully.");
 
                 if (!patchedGetHash)
                     opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
@@ -300,8 +298,7 @@ namespace FindJs
             opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
                 $"Backup created at: {backupPath}");
 
-            File.WriteAllText(jsFilePath,PATCH_MARKER + Environment.NewLine +  content, Encoding.UTF8);
+            File.WriteAllText(jsFilePath, content,new UTF8Encoding(false));
         }
-
     }
 }

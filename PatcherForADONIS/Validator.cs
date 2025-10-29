@@ -1,11 +1,12 @@
-﻿using System;
+﻿using PatcherForADONIS;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FindJs
+namespace PatcherForADONIS
 {
     public class Validator
     {
@@ -17,7 +18,7 @@ namespace FindJs
         {
             clientPath = Path.Combine(expPath, "client", "scripts", "ext_overrides.js");
             indexHtmlPath = Path.Combine(expPath, "index.html");
-            this.opStatus = new OperationStatusExt();
+            opStatus = new OperationStatusExt();
         }
 
         public bool validateExportFolder() 

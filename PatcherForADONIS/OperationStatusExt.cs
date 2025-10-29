@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FindJs
+namespace PatcherForADONIS
 {
     public class OperationStatusExt
     {

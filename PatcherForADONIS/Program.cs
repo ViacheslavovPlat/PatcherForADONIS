@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using System.Runtime.CompilerServices;
-using FindJs;
+using PatcherForADONIS;
 
 namespace Program 
 {
@@ -49,14 +49,23 @@ namespace Program
             var patcher = new JsPatcher(jsFilePath);
             var (success, newContent) = patcher.applyPatch();
 
-            if (success)
+            if (success && !string.IsNullOrWhiteSpace(newContent))
             {
                 File.WriteAllText(jsFilePath, newContent);
+                opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
+                        "Patching completed successfully.");
                 return 0;
             }
-            else 
+            else if (success) 
             { 
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.ERROR, "Patching failed. No changes were made to the file.");
+                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING, 
+                        "Patching completed. No changes were necessary.");
+                return 0;
+            }
+            else
+            {
+                opStatus.printOperationStatus(OperationStatusExt.operationStatus.ERROR, 
+                        "Patching failed. No changes were made to the file.");
                 return 4;
             }
         }
