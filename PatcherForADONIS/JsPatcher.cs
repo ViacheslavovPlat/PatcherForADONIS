@@ -14,23 +14,20 @@ namespace PatcherForADONIS
         private readonly OperationStatusExt opStatus;
         private const string PATCH_MARKER = "// Patched for iframe support";
 
-        private const string NEW_GETHASH_BODY = @"
-        var loc = window == window.top ? window.top.location : window.location;
-        var href = loc.href, i = href.indexOf('#');
-        return i >= 0 ? href.substr(i + 1) : null;";
+        private const string NEW_GETHASH_BODY = "\tvar loc = window == window.top ? window.top.location : window.location;\n" +
+        "\tvar href = loc.href, i = href.indexOf('#');\n" +
+        "\treturn i >= 0 ? href.substr(i + 1) : null;\n  ";
 
-        private const string NEW_TOKEN_BODY = @"
-        token = newtoken;
-        handleStateChange(token);
-        var loc = window == window.top ? window.top.location : window.location;
-        loc.hash = token;
-        hash = token;
-        doSave();";
+        private const string NEW_TOKEN_BODY = "\t\t\ttoken = newtoken;\n" +
+            "\t\t\thandleStateChange(token);\n" +
+            "\t\t\tvar loc = window == window.top ? window.top.location : window.location;\n" +
+            "\t\t\tloc.hash = token;\n" +
+            "\t\t\thash = token;\n"+
+            "\t\t\tdoSave();\n\t\t  ";
 
-        private const string NEW_EXT_BODY = @"
-            var loc = window == window.top ? window.top.location : window.location;
-            loc.hash = token;
-            return true;";
+        private const string NEW_EXT_BODY = "\t\t\tvar loc = window == window.top ? window.top.location : window.location;\n" +
+            "\t\t\tloc.hash = token;\n" +
+            "\t\t\treturn true;\n\t\t  ";
 
         public JsPatcher(string jsFilePath) 
         {
@@ -62,7 +59,7 @@ namespace PatcherForADONIS
             if(Regex.IsMatch(content, @"^\s*//\s*Patched\s+for\s+iframe\s+support", RegexOptions.Multiline))
             {
                 opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                        "File is already patched skipping");
+                       "File is already patched skipping");
                 return (true, "");
             }
 
@@ -81,7 +78,7 @@ namespace PatcherForADONIS
                 if (closeGet > openGet)
                 {
                     content = content.Substring(0, openGet + 1)
-                            + "\n" + NEW_GETHASH_BODY + "\n"
+                            + NEW_GETHASH_BODY
                             + content.Substring(closeGet);
 
                     patchedGetHash = true;
@@ -121,7 +118,7 @@ namespace PatcherForADONIS
                         if (ifClose > ifOpen)
                         {
                             checkFunc = checkFunc.Substring(0, ifOpen + 1)
-                                       + "\n" + NEW_TOKEN_BODY + "\n\t"
+                                       + NEW_TOKEN_BODY
                                        + checkFunc.Substring(ifClose);
 
                             content = content.Substring(0, openCheck)
@@ -185,7 +182,7 @@ namespace PatcherForADONIS
                                     if (elseClose > elseOpen)
                                     {
                                         addBlock = addBlock.Substring(0, elseOpen + 1)
-                                                 + "\n" + NEW_EXT_BODY + "\n\t"
+                                                 + NEW_EXT_BODY
                                                  + addBlock.Substring(elseClose);
 
                                         content = content.Substring(0, addOpen)
