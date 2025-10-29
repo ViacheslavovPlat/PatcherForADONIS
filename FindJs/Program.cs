@@ -52,7 +52,6 @@ namespace Program
             if (success)
             {
                 File.WriteAllText(jsFilePath, newContent);
-                opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS, "Patching completed successfully.");
                 return 0;
             }
             else 
