@@ -58,9 +58,9 @@ namespace PatcherForADONIS
 
             if(Regex.IsMatch(content, @"^\s*//\s*Patched\s+for\s+iframe\s+support", RegexOptions.Multiline))
             {
-                //opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                  //     "File is already patched skipping");
-                //return (true, "");
+                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                         "File is already patched skipping");
+                return (true, "");
             }
 
             opStatus.printOperationStatus(OperationStatusExt.operationStatus.PENDING,
