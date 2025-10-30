@@ -73,22 +73,30 @@ namespace PatcherForADONIS
             int posGet = content.IndexOf("function getHash", StringComparison.Ordinal);
             if (posGet >= 0)
             {
-                int openGet = content.IndexOf('{', posGet);
-                int closeGet = findBlockEndIndex(content, openGet);
-                if (closeGet > openGet)
+                try
                 {
-                    content = content.Substring(0, openGet + 1)
-                            + NEW_GETHASH_BODY
-                            + content.Substring(closeGet);
+                    int openGet = content.IndexOf('{', posGet);
+                    int closeGet = findBlockEndIndex(content, openGet);
+                    if (closeGet > openGet)
+                    {
+                        content = content.Substring(0, openGet + 1)
+                                + NEW_GETHASH_BODY
+                                + content.Substring(closeGet);
 
-                    patchedGetHash = true;
-                    opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
-                            "getHash() patched successfully.");
+                        patchedGetHash = true;
+                        opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
+                                "getHash() patched successfully.");
+                    }
+                    else
+                    {
+                        opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                                "Could not locate getHash() body boundaries.");
+                    }
                 }
-                else
-                {
+                catch (Exception e) 
+                { 
                     opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                            "Could not locate getHash() body boundaries.");
+                        $"Error while patching getHash(): {e.Message}");
                 }
             }
             else
@@ -104,47 +112,54 @@ namespace PatcherForADONIS
             int posCheck = content.IndexOf("function checkIFrame", StringComparison.Ordinal);
             if (posCheck >= 0)
             {
-                int openCheck = content.IndexOf('{', posCheck);
-                int closeCheck = findBlockEndIndex(content, openCheck);
-                if (closeCheck > openCheck)
-                {
-                    string checkFunc = content.Substring(openCheck, closeCheck - openCheck + 1);
-
-                    int ifPos = checkFunc.IndexOf("if (newtoken !== token)", StringComparison.OrdinalIgnoreCase);
-                    if (ifPos >= 0)
+                try { 
+                    int openCheck = content.IndexOf('{', posCheck);
+                    int closeCheck = findBlockEndIndex(content, openCheck);
+                    if (closeCheck > openCheck)
                     {
-                        int ifOpen = checkFunc.IndexOf('{', ifPos);
-                        int ifClose = findBlockEndIndex(checkFunc, ifOpen);
-                        if (ifClose > ifOpen)
+                        string checkFunc = content.Substring(openCheck, closeCheck - openCheck + 1);
+
+                        int ifPos = checkFunc.IndexOf("if (newtoken !== token)", StringComparison.OrdinalIgnoreCase);
+                        if (ifPos >= 0)
                         {
-                            checkFunc = checkFunc.Substring(0, ifOpen + 1)
-                                       + NEW_TOKEN_BODY
-                                       + checkFunc.Substring(ifClose);
+                            int ifOpen = checkFunc.IndexOf('{', ifPos);
+                            int ifClose = findBlockEndIndex(checkFunc, ifOpen);
+                            if (ifClose > ifOpen)
+                            {
+                                checkFunc = checkFunc.Substring(0, ifOpen + 1)
+                                           + NEW_TOKEN_BODY
+                                           + checkFunc.Substring(ifClose);
 
-                            content = content.Substring(0, openCheck)
-                                     + checkFunc
-                                     + content.Substring(closeCheck + 1);
+                                content = content.Substring(0, openCheck)
+                                         + checkFunc
+                                         + content.Substring(closeCheck + 1);
 
-                            patchedToken = true;
-                            opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
-                                    "Token setter patched successfully.");
+                                patchedToken = true;
+                                opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
+                                        "Token setter patched successfully.");
+                            }
+                            else
+                            {
+                                opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                                        "Could not locate if-block boundaries in checkIFrame().");
+                            }
                         }
                         else
                         {
                             opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                                    "Could not locate if-block boundaries in checkIFrame().");
+                                    "Could not locate if (newtoken !== token) block in checkIFrame().");
                         }
                     }
                     else
                     {
                         opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                                "Could not locate if (newtoken !== token) block in checkIFrame().");
+                                "Could not locate checkIFrame() body boundaries.");
                     }
                 }
-                else
+                catch (Exception e)
                 {
                     opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                            "Could not locate checkIFrame() body boundaries.");
+                        $"Error while patching token setter: {e.Message}");
                 }
             }
             else
@@ -162,65 +177,72 @@ namespace PatcherForADONIS
                 int addPos = content.IndexOf("add: function", returnPos, StringComparison.OrdinalIgnoreCase);
                 if (addPos >= 0)
                 {
-                    int addOpen = content.IndexOf('{', addPos);
-                    int addClose = findBlockEndIndex(content, addOpen);
-                    if (addClose > addOpen)
-                    {
-                        string addBlock = content.Substring(addOpen, addClose - addOpen + 1);
-                        int ifExPos = addBlock.IndexOf("if (Ext.isIE)", StringComparison.OrdinalIgnoreCase);
-                        if (ifExPos >= 0)
+                    try { 
+                        int addOpen = content.IndexOf('{', addPos);
+                        int addClose = findBlockEndIndex(content, addOpen);
+                        if (addClose > addOpen)
                         {
-                            int ifExOpen = addBlock.IndexOf('{', ifExPos);
-                            int ifExClose = findBlockEndIndex(addBlock, ifExOpen);
-                            if (ifExClose > ifExOpen)
+                            string addBlock = content.Substring(addOpen, addClose - addOpen + 1);
+                            int ifExPos = addBlock.IndexOf("if (Ext.isIE)", StringComparison.OrdinalIgnoreCase);
+                            if (ifExPos >= 0)
                             {
-                                int elsePos = addBlock.IndexOf("else", ifExClose, StringComparison.OrdinalIgnoreCase);
-                                if (elsePos >= 0)
+                                int ifExOpen = addBlock.IndexOf('{', ifExPos);
+                                int ifExClose = findBlockEndIndex(addBlock, ifExOpen);
+                                if (ifExClose > ifExOpen)
                                 {
-                                    int elseOpen = addBlock.IndexOf('{', elsePos);
-                                    int elseClose = findBlockEndIndex(addBlock, elseOpen);
-                                    if (elseClose > elseOpen)
+                                    int elsePos = addBlock.IndexOf("else", ifExClose, StringComparison.OrdinalIgnoreCase);
+                                    if (elsePos >= 0)
                                     {
-                                        addBlock = addBlock.Substring(0, elseOpen + 1)
-                                                 + NEW_EXT_BODY
-                                                 + addBlock.Substring(elseClose);
+                                        int elseOpen = addBlock.IndexOf('{', elsePos);
+                                        int elseClose = findBlockEndIndex(addBlock, elseOpen);
+                                        if (elseClose > elseOpen)
+                                        {
+                                            addBlock = addBlock.Substring(0, elseOpen + 1)
+                                                     + NEW_EXT_BODY
+                                                     + addBlock.Substring(elseClose);
 
-                                        content = content.Substring(0, addOpen)
-                                                 + addBlock
-                                                 + content.Substring(addClose + 1);
+                                            content = content.Substring(0, addOpen)
+                                                     + addBlock
+                                                     + content.Substring(addClose + 1);
 
-                                        patchedExt = true;
-                                        opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
-                                                "Extension method patched successfully.");
+                                            patchedExt = true;
+                                            opStatus.printOperationStatus(OperationStatusExt.operationStatus.SUCCESS,
+                                                    "Extension method patched successfully.");
+                                        }
+                                        else
+                                        {
+                                            opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
+                                                    "Could not locate else-block boundaries in add() method.");
+                                        }
                                     }
                                     else
                                     {
                                         opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                                                "Could not locate else-block boundaries in add() method.");
+                                                "Could not locate else-block in add() method.");
                                     }
                                 }
                                 else
                                 {
                                     opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                                            "Could not locate else-block in add() method.");
+                                            "Could not locate Ext.isIE if-block boundaries in add() method.");
                                 }
                             }
                             else
                             {
                                 opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                                        "Could not locate Ext.isIE if-block boundaries in add() method.");
+                                        "Could not locate Ext.isIE check in add() method.");
                             }
                         }
                         else
                         {
                             opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                                    "Could not locate Ext.isIE check in add() method.");
+                                    "Could not locate add() method body boundaries.");
                         }
                     }
-                    else
+                    catch (Exception e)
                     {
                         opStatus.printOperationStatus(OperationStatusExt.operationStatus.WARNING,
-                                "Could not locate add() method body boundaries.");
+                            $"Error while patching extension method: {e.Message}");
                     }
                 }
                 else
